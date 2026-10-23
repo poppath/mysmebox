@@ -2,6 +2,7 @@
 // ล็อต/วันหมดอายุ: รับเข้าเป็นล็อต, ตัดแบบ FEFO (หมดอายุก่อนออกก่อน), คืนล็อตเดิมเมื่อยกเลิก
 const { str, int, badRequest, notFound } = require('../http');
 const { adjustStock } = require('./products');
+const config = require('../config');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -103,19 +104,21 @@ async function listLots(client, shopId, productId, { all = false } = {}) {
   const p = await client.query('SELECT stock_base FROM products WHERE shop_id = $1 AND id = $2', [shopId, productId]);
   if (!p.rowCount) throw notFound('ไม่พบสินค้า');
   const { rows } = await client.query(
-    `SELECT * FROM stock_lots WHERE shop_id = $1 AND product_id = $2 ${all ? '' : 'AND qty_base > 0'}
-      ORDER BY exp_date NULLS LAST, id LIMIT 200`,
+    `SELECT *, mfg_date::text AS mfg_date, exp_date::text AS exp_date,
+            (exp_date - (NOW() AT TIME ZONE 'Asia/Bangkok')::date) AS days_left
+       FROM stock_lots WHERE shop_id = $1 AND product_id = $2 ${all ? '' : 'AND qty_base > 0'}
+      ORDER BY stock_lots.exp_date NULLS LAST, stock_lots.id LIMIT 200`,
     [shopId, productId]
   );
-  const lots = rows.map(lotJson);
+  const lots = rows.map((r) => ({ ...lotJson(r), daysLeft: r.days_left === null ? null : Number(r.days_left) }));
   const inLots = rows.reduce((s, r) => s + BigInt(r.qty_base), 0n);
-  return { lots, untrackedBase: Number(BigInt(p.rows[0].stock_base) - inLots) };
+  return { lots, alertDays: config.expiryAlertDays, untrackedBase: Number(BigInt(p.rows[0].stock_base) - inLots) };
 }
 
 /** ล็อตที่ใกล้หมดอายุ (หรือหมดแล้ว) ภายใน days วัน ตามเวลาไทย */
 async function nearExpiry(client, shopId, days, limit = 20) {
   const { rows } = await client.query(
-    `SELECT l.*, p.name, p.code, p.base_unit_name,
+    `SELECT l.*, l.mfg_date::text AS mfg_date, l.exp_date::text AS exp_date, p.name, p.code, p.base_unit_name,
             (l.exp_date - (NOW() AT TIME ZONE 'Asia/Bangkok')::date) AS days_left
        FROM stock_lots l JOIN products p ON p.id = l.product_id
       WHERE l.shop_id = $1 AND l.qty_base > 0 AND l.exp_date IS NOT NULL AND p.is_active

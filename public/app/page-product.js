@@ -354,11 +354,9 @@ export async function render(view, ctx) {
     try {
       const r = await api(`/api/products/${encodeURIComponent(id)}/lots`);
       if (!ctx.isActive()) return;
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const daysLeft = (d) => Math.round((new Date(d + 'T00:00:00') - today) / 86400000);
       box.innerHTML = (r.lots.length ? `<div class="moves">${r.lots.map((l) => {
-        const dl = l.expDate ? daysLeft(l.expDate) : null;
-        const badge = dl === null ? '' : dl < 0 ? '<span class="badge badge-red">หมดอายุแล้ว</span>' : dl <= 30 ? `<span class="badge badge-red">อีก ${esc(dl)} วัน</span>` : '';
+        const dl = l.daysLeft;
+        const badge = dl === null ? '' : dl < 0 ? '<span class="badge badge-red">หมดอายุแล้ว</span>' : dl <= r.alertDays ? `<span class="badge badge-red">อีก ${esc(dl)} วัน</span>` : '';
         return `<div class="move" data-lot="${esc(l.id)}">
           <div><b>${esc(l.lotNo || 'ไม่มีเลขล็อต')}</b> ${badge}<span class="muted tiny">${l.mfgDate ? 'ผลิต ' + esc(l.mfgDate) + ' · ' : ''}${l.expDate ? 'หมดอายุ ' + esc(l.expDate) : 'ไม่ระบุวันหมดอายุ'}</span></div>
           <span class="mv-bal">เหลือ ${esc(l.qtyBase)}/${esc(l.qtyReceived)}</span>
