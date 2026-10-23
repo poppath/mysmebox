@@ -2,6 +2,9 @@
 const db = require('../db');
 const { orderJson } = require('../services/orders');
 const { LIST_COLS } = require('./orders');
+const { nearExpiry } = require('../services/lots');
+const config = require('../config');
+const { int } = require('../http');
 
 // เริ่มต้นวันนี้ตามเวลาไทย (คืนเป็น timestamptz ให้ใช้ index created_at ได้)
 const TODAY_START_TH = "(date_trunc('day', NOW() AT TIME ZONE 'Asia/Bangkok') AT TIME ZONE 'Asia/Bangkok')";
@@ -38,20 +41,24 @@ async function recentOrders(client, shopId, limit = 8) {
   return rows.map((r) => orderJson(r));
 }
 
-async function buildDashboard(shopId) {
-  const [s, low, recent] = await Promise.all([summary(db.pool, shopId), lowStock(db.pool, shopId), recentOrders(db.pool, shopId)]);
+async function buildDashboard(shopId, expiryDays = config.expiryAlertDays) {
+  const [s, low, recent, expiring] = await Promise.all([
+    summary(db.pool, shopId), lowStock(db.pool, shopId), recentOrders(db.pool, shopId), nearExpiry(db.pool, shopId, expiryDays),
+  ]);
   return {
     today: { orderCount: Number(s.today_count), salesSatang: s.today_sales, profitSatang: s.today_profit },
     awaitingTransfer: { count: Number(s.transfer_count), amountSatang: s.transfer_amount },
     awaitingCod: { count: Number(s.cod_count), amountSatang: s.cod_amount },
     toShip: { count: Number(s.to_ship) },
     lowStock: low,
+    nearExpiry: { days: expiryDays, lots: expiring },
     recentOrders: recent,
   };
 }
 
 function register(router) {
-  router.get('/api/dashboard', async ({ shopId }) => buildDashboard(shopId));
+  router.get('/api/dashboard', async ({ shopId, query }) =>
+    buildDashboard(shopId, int(query.get('expiryDays'), 'จำนวนวันแจ้งเตือนหมดอายุ', { min: 0, max: 3650, fallback: config.expiryAlertDays })));
 }
 
 module.exports = { register, buildDashboard };

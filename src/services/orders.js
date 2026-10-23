@@ -5,6 +5,7 @@ const { parseSatang, calcQtyBase, calcOrderTotals } = require('../money');
 const { parseAddress, numOrNull } = require('../address');
 const { isBankCode } = require('../master');
 const { insertMovement } = require('./products');
+const { consumeFefo, returnLots } = require('./lots');
 
 const CHANNELS = ['FACEBOOK', 'LINE', 'TIKTOK', 'SHOPEE', 'LAZADA', 'STORE', 'OTHER'];
 const COURIERS = ['FLASH', 'KERRY', 'JT', 'THAIPOST', 'SPX', 'LALAMOVE', 'PICKUP', 'NONE'];
@@ -221,6 +222,7 @@ async function deductStock(client, { shopId, userId, billId, billNo, need, produ
     const balance = BigInt(products.get(id).stock_base) - need.get(id);
     await client.query('UPDATE products SET stock_base = $3, updated_at = NOW() WHERE shop_id = $1 AND id = $2', [shopId, id, balance.toString()]);
     await insertMovement(client, { shopId, productId: id, delta: -need.get(id), balanceAfter: balance, reason: 'SALE', billId, note: billNo, userId, at });
+    await consumeFefo(client, { shopId, productId: id, qty: need.get(id), billId });
   }
 }
 
@@ -308,6 +310,7 @@ async function cancelOrder(client, shopId, userId, billId, { reason }) {
     await client.query('UPDATE products SET stock_base = $3, updated_at = NOW() WHERE shop_id = $1 AND id = $2', [shopId, id, balance.toString()]);
     await insertMovement(client, { shopId, productId: id, delta: back.get(id), balanceAfter: balance, reason: 'CANCEL', billId, note: `à¸¢à¸à¹€à¸¥à¸´à¸ ${bill.bill_no}`, userId });
   }
+  await returnLots(client, billId);
   await client.query(
     `UPDATE bills SET status = 'CANCELLED', cancelled_at = NOW(), cancel_reason = $3, updated_at = NOW() WHERE shop_id = $1 AND id = $2`,
     [shopId, billId, reason]

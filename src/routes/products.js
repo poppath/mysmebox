@@ -1,4 +1,5 @@
 'use strict';
+const lots = require('../services/lots');
 const db = require('../db');
 const { str, int, oneOf, badRequest, notFound } = require('../http');
 const svc = require('../services/products');
@@ -94,6 +95,16 @@ function register(router) {
       return svc.getProduct(client, shopId, params.id);
     });
     return { product };
+  });
+
+  router.get('/api/products/:id/lots', async ({ shopId, params, query }) => lots.listLots(db.pool, shopId, params.id, { all: query.get('all') === '1' }));
+
+  router.post('/api/products/:id/lots', async ({ shopId, user, params, body }) => {
+    const input = lots.parseLotInput(body);
+    return db.tx(async (client) => {
+      const lot = await lots.receiveLot(client, shopId, user.id, params.id, input);
+      return { lot, product: await svc.getProduct(client, shopId, params.id) };
+    });
   });
 
   router.get('/api/products/:id/movements', async ({ shopId, params }) => ({ movements: await listMovements(shopId, params.id) }));

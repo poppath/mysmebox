@@ -24,6 +24,10 @@ export async function render(view, ctx) {
         <div class="card-head"><h2>ของใกล้หมด</h2><a class="link" href="#/products">ดูสินค้าทั้งหมด</a></div>
         ${d.lowStock.length ? `<ul class="list">${d.lowStock.map((p) => `<li><a class="list-row" href="#/products/${encodeURIComponent(p.id)}"><span class="lr-main">${esc(p.name)}</span><span class="badge badge-red">เหลือ ${esc(p.stockBase)} ${esc(p.baseUnitName)}</span>${icon('chevron', 18)}</a></li>`).join('')}</ul>` : '<p class="muted pad">สต๊อกยังพอทุกตัว 👍</p>'}
       </section>
+      ${d.nearExpiry && d.nearExpiry.lots.length ? `<section class="card">
+        <div class="card-head"><h2>ใกล้หมดอายุ (${esc(d.nearExpiry.days)} วัน)</h2></div>
+        <ul class="list">${d.nearExpiry.lots.map((l) => `<li><a class="list-row" href="#/products/${encodeURIComponent(l.productId)}"><span class="lr-main">${esc(l.name)}${l.lotNo ? ` <span class="muted">ล็อต ${esc(l.lotNo)}</span>` : ''}</span><span class="badge badge-red">${l.daysLeft < 0 ? 'หมดอายุแล้ว' : `อีก ${esc(l.daysLeft)} วัน`} · ${esc(l.qtyBase)} ${esc(l.baseUnitName)}</span>${icon('chevron', 18)}</a></li>`).join('')}</ul>
+      </section>` : ''}
       <section class="card">
         <div class="card-head"><h2>ออเดอร์ล่าสุด</h2><a class="link" href="#/orders">ดูทั้งหมด</a></div>
         ${d.recentOrders.length ? `<div class="order-list">${d.recentOrders.map(orderCard).join('')}</div>` : emptyState('ยังไม่มีออเดอร์ เริ่มเปิดออเดอร์แรกได้เลย', '<a class="btn btn-primary" href="#/orders/new">เปิดออเดอร์</a>')}

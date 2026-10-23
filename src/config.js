@@ -86,6 +86,7 @@ const config = {
   businessTz: 'Asia/Bangkok',
   sessionDays: 30,
   demoHours: 24,
+  expiryAlertDays: Math.max(0, Number.parseInt(env('EXPIRY_ALERT_DAYS', '30'), 10) || 30), // แจ้งเตือนล็อตใกล้หมดอายุ (วัน)
 };
 
 module.exports = config;

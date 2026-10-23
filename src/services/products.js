@@ -260,6 +260,7 @@ async function adjustStock(client, shopId, userId, productId, { type, qtyBase, n
   if (balance < 0n) throw conflict(`สต๊อกคงเหลือไม่พอ (เหลือ ${rows[0].stock_base})`);
   await client.query('UPDATE products SET stock_base = $3, updated_at = NOW() WHERE shop_id = $1 AND id = $2', [shopId, productId, balance.toString()]);
   await insertMovement(client, { shopId, productId, delta, balanceAfter: balance, reason: type, note, userId });
+  if (delta < 0n) await require('./lots').trimLotsToBalance(client, shopId, productId, balance);
 }
 
 module.exports = {

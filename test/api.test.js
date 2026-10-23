@@ -561,6 +561,68 @@ test('dashboard ตัวเลขตรงกับออเดอร์ที�
   for (const p of d.lowStock) assert.deepEqual(Object.keys(p).sort(), ['baseUnitName', 'code', 'id', 'minStockBase', 'name', 'stockBase']);
 });
 
+test('lots: รับเข้าเป็นล็อต, ตัด FEFO ในบิล, ยกเลิกคืนล็อตเดิม, แจ้งเตือนใกล้หมดอายุ', { skip }, async () => {
+  const A = S.A;
+  const day = (n) => thaiDate(new Date(Date.now() + n * 86400000).toISOString());
+  const p = expectOk(await A.post('/api/products', {
+    name: 'ปลาหิมะ Kirimi 100g', baseUnitCode: 'PCS', baseUnitName: 'ชิ้น', openingStock: 2, costBaseSatang: '9000',
+    barcodes: [{ barcode: '', unitCode: 'PCS', priceSatang: '19000' }],
+  })).product;
+  const bc = p.barcodes[0].barcode;
+  // validation
+  expectErr(await A.post(`/api/products/${p.id}/lots`, { qtyBase: 0, expDate: day(10) }), 400);
+  expectErr(await A.post(`/api/products/${p.id}/lots`, { qtyBase: 1, expDate: '2026-02-30' }), 400);
+  expectErr(await A.post(`/api/products/${p.id}/lots`, { qtyBase: 1, mfgDate: day(5), expDate: day(1) }), 400);
+  expectErr(await S.B.post(`/api/products/${p.id}/lots`, { qtyBase: 1 }), 404);
+  // รับ 2 ล็อต: L-LATE หมดอายุช้ากว่า รับก่อน ; L-SOON หมดอายุเร็ว
+  const late = expectOk(await A.post(`/api/products/${p.id}/lots`, { lotNo: 'L-LATE', mfgDate: day(-10), expDate: day(200), qtyBase: 5 }));
+  assert.equal(late.product.stockBase, 7);
+  assert.equal(late.lot.expDate, day(200));
+  const soon = expectOk(await A.post(`/api/products/${p.id}/lots`, { lotNo: 'L-SOON', expDate: day(10), qtyBase: 3 })).lot;
+  let l = expectOk(await A.get(`/api/products/${p.id}/lots`));
+  assert.deepEqual(l.lots.map((x) => x.lotNo), ['L-SOON', 'L-LATE']);
+  assert.equal(l.untrackedBase, 2);
+  const mv = expectOk(await A.get(`/api/products/${p.id}/movements`)).movements;
+  assert.equal(mv[0].reason, 'RECEIVE');
+  assert.match(mv[0].note, /L-SOON/);
+  // แจ้งเตือน: default 30 วันเห็น L-SOON ; expiryDays=5 ไม่เห็น ; 365 เห็นทั้งคู่
+  let d = expectOk(await A.get('/api/dashboard'));
+  assert.equal(d.nearExpiry.days, 30);
+  const mine = (x) => x.nearExpiry.lots.filter((y) => y.productId === p.id);
+  assert.deepEqual(mine(d).map((x) => [x.lotNo, x.daysLeft]), [['L-SOON', 10]]);
+  assert.equal(mine(expectOk(await A.get('/api/dashboard?expiryDays=5'))).length, 0);
+  assert.equal(mine(expectOk(await A.get('/api/dashboard?expiryDays=365'))).length, 2);
+  expectErr(await A.get('/api/dashboard?expiryDays=abc'), 400);
+  // ขาย 4: FEFO → L-SOON 3, L-LATE 1
+  const order = (qty) => A.post('/api/orders', { customerName: 'ลูกค้าล็อต', saveCustomer: false, channel: 'LINE', courier: 'FLASH', payMethod: 'CASH', paid: true, ship: shipAddr, items: [{ barcode: bc, qty }] });
+  const o = expectOk(await order(4)).order;
+  l = expectOk(await A.get(`/api/products/${p.id}/lots?all=1`));
+  assert.deepEqual(l.lots.map((x) => [x.lotNo, x.qtyBase]), [['L-SOON', 0], ['L-LATE', 4]]);
+  assert.equal(l.untrackedBase, 2);
+  assert.equal(mine(expectOk(await A.get('/api/dashboard'))).length, 0);
+  // ขายอีก 5: L-LATE 4 + ไม่ระบุล็อต 1
+  const o2 = expectOk(await order(5)).order;
+  l = expectOk(await A.get(`/api/products/${p.id}/lots`));
+  assert.equal(l.lots.length, 0);
+  assert.equal(l.untrackedBase, 1);
+  // ยกเลิกบิลแรก → คืนเข้า L-SOON 3, L-LATE 1
+  expectOk(await A.post(`/api/orders/${o.id}/cancel`, { reason: 'ทดสอบคืนล็อต' }));
+  l = expectOk(await A.get(`/api/products/${p.id}/lots`));
+  assert.deepEqual(l.lots.map((x) => [x.lotNo, x.qtyBase]), [['L-SOON', 3], ['L-LATE', 1]]);
+  assert.equal(l.untrackedBase, 1);
+  expectErr(await A.post(`/api/orders/${o.id}/cancel`, { reason: 'ซ้ำ' }), 409);
+  expectOk(await A.post(`/api/orders/${o2.id}/cancel`, { reason: 'ทดสอบ' }));
+  l = expectOk(await A.get(`/api/products/${p.id}/lots`));
+  assert.deepEqual(l.lots.map((x) => [x.lotNo, x.qtyBase]), [['L-SOON', 3], ['L-LATE', 5]]);
+  assert.equal(l.untrackedBase, 2);
+  // ปรับลดจนต่ำกว่ายอดในล็อต → ตัดล็อต FEFO ให้ไม่เกิน stock
+  expectOk(await A.post(`/api/products/${p.id}/stock`, { type: 'ADJUST', qtyBase: -8, note: 'ของเสีย' }));
+  l = expectOk(await A.get(`/api/products/${p.id}/lots`));
+  assert.deepEqual(l.lots.map((x) => [x.lotNo, x.qtyBase]), [['L-LATE', 2]]);
+  assert.equal(l.untrackedBase, 0);
+  assert.equal(soon.qtyReceived, 3);
+});
+
 test('map + customers + warehouses CRUD', { skip }, async () => {
   const A = S.A;
   const m = expectOk(await A.get('/api/map'));

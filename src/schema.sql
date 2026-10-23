@@ -231,3 +231,31 @@ CREATE TABLE IF NOT EXISTS ai_usage (
   calls      INT NOT NULL DEFAULT 0,
   PRIMARY KEY (user_id, usage_date)
 );
+
+-- ล็อต/วันหมดอายุ (ของแช่แข็ง): stock_lots.qty_base = คงเหลือในล็อต ; ส่วนที่ไม่อยู่ในล็อต = stock_base - SUM(qty_base) ("ไม่ระบุล็อต")
+CREATE TABLE IF NOT EXISTS stock_lots (
+  id              BIGSERIAL PRIMARY KEY,
+  shop_id         BIGINT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+  product_id      BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  lot_no          VARCHAR(60) NOT NULL DEFAULT '',
+  mfg_date        DATE,
+  exp_date        DATE,
+  qty_received    BIGINT NOT NULL CHECK (qty_received > 0),
+  qty_base        BIGINT NOT NULL CHECK (qty_base >= 0),
+  note            TEXT NOT NULL DEFAULT '',
+  created_by      BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_stock_lots_fefo ON stock_lots(product_id, exp_date NULLS LAST, id) WHERE qty_base > 0;
+CREATE INDEX IF NOT EXISTS idx_stock_lots_expiry ON stock_lots(shop_id, exp_date) WHERE qty_base > 0;
+
+-- ตัดล็อตไปกับบิลไหน (ใช้คืนล็อตเดิมตอนยกเลิก)
+CREATE TABLE IF NOT EXISTS stock_lot_allocations (
+  id              BIGSERIAL PRIMARY KEY,
+  bill_id         BIGINT NOT NULL REFERENCES bills(id) ON DELETE CASCADE,
+  lot_id          BIGINT NOT NULL REFERENCES stock_lots(id) ON DELETE CASCADE,
+  product_id      BIGINT NOT NULL,
+  qty_base        BIGINT NOT NULL CHECK (qty_base > 0),
+  returned_at     TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_lot_alloc_bill ON stock_lot_allocations(bill_id);

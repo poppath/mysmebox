@@ -84,6 +84,8 @@ export async function render(view, ctx) {
     ${id ? `<section class="card stock-card">
       <div class="stock-now"><span class="muted">คงเหลือ</span><b class="stock-num" data-stock>${esc(product.stockBase)}</b><span>${esc(product.baseUnitName)}</span>${product.isLowStock ? '<span class="badge badge-red">ใกล้หมด</span>' : ''}</div>
       <div class="actions"><button type="button" class="btn btn-primary" data-receive>${icon('plus', 18)}<span>รับของเข้า</span></button><button type="button" class="btn btn-outline" data-adjust>${icon('edit', 18)}<span>ปรับยอด</span></button></div>
+      <div class="card-head"><h2>ล็อต / วันหมดอายุ</h2></div>
+      <div data-lots>${skeleton(2)}</div>
     </section>` : ''}
     <form data-form novalidate>
       <section class="card">
@@ -346,6 +348,27 @@ export async function render(view, ctx) {
   }
   loadMoves();
 
+  // ---------- ล็อต (FEFO: หมดอายุก่อนขายก่อน) ----------
+  async function loadLots() {
+    const box = view.querySelector('[data-lots]');
+    try {
+      const r = await api(`/api/products/${encodeURIComponent(id)}/lots`);
+      if (!ctx.isActive()) return;
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const daysLeft = (d) => Math.round((new Date(d + 'T00:00:00') - today) / 86400000);
+      box.innerHTML = (r.lots.length ? `<div class="moves">${r.lots.map((l) => {
+        const dl = l.expDate ? daysLeft(l.expDate) : null;
+        const badge = dl === null ? '' : dl < 0 ? '<span class="badge badge-red">หมดอายุแล้ว</span>' : dl <= 30 ? `<span class="badge badge-red">อีก ${esc(dl)} วัน</span>` : '';
+        return `<div class="move" data-lot="${esc(l.id)}">
+          <div><b>${esc(l.lotNo || 'ไม่มีเลขล็อต')}</b> ${badge}<span class="muted tiny">${l.mfgDate ? 'ผลิต ' + esc(l.mfgDate) + ' · ' : ''}${l.expDate ? 'หมดอายุ ' + esc(l.expDate) : 'ไม่ระบุวันหมดอายุ'}</span></div>
+          <span class="mv-bal">เหลือ ${esc(l.qtyBase)}/${esc(l.qtyReceived)}</span>
+        </div>`;
+      }).join('')}</div>` : '<p class="muted pad">ยังไม่มีล็อต — กด "รับของเข้า" แล้วใส่เลขล็อต/วันหมดอายุ</p>')
+        + (r.untrackedBase > 0 ? `<p class="hint">ไม่ระบุล็อต ${esc(r.untrackedBase)} ${esc(product.baseUnitName)} (ขายหลังล็อตที่มีวันหมดอายุ)</p>` : '');
+    } catch (e2) { renderError(box, e2, loadLots); }
+  }
+  loadLots();
+
   view.querySelector('[data-receive]').addEventListener('click', () => {
     const units = product.units || [];
     modal({
@@ -353,6 +376,9 @@ export async function render(view, ctx) {
       body: `<div class="grid-2"><label class="field"><span>จำนวน</span><input data-q inputmode="numeric" placeholder="เช่น 2"></label>
         <label class="field"><span>หน่วย</span><select data-u>${units.map((u) => `<option value="${esc(u.unitCode)}">${esc(u.unitName)}</option>`).join('')}</select></label></div>
         <p class="hint" data-calc></p>
+        <label class="field"><span>เลขล็อต</span><input data-lot maxlength="60" placeholder="เช่น L2610-01"></label>
+        <div class="grid-2"><label class="field"><span>วันผลิต</span><input type="date" data-mfg></label>
+        <label class="field"><span>วันหมดอายุ</span><input type="date" data-exp></label></div>
         <label class="field"><span>หมายเหตุ</span><input data-n maxlength="200" placeholder="เช่น รับจากโรงงาน"></label>`,
       actions: [{ text: 'ยกเลิก' }, {
         text: 'รับเข้าสต๊อก', cls: 'btn-primary',
@@ -364,7 +390,12 @@ export async function render(view, ctx) {
           if (num % BigInt(u.divideValue || 1) !== 0n) { toast('จำนวนนี้แปลงเป็นหน่วยเล็กไม่ลงตัว', 'error'); return; }
           const qtyBase = Number(num / BigInt(u.divideValue || 1));
           await busy(button, async () => {
-            await api(`/api/products/${encodeURIComponent(id)}/stock`, { body: { type: 'RECEIVE', qtyBase, note: body.querySelector('[data-n]').value.trim() } });
+            const note = body.querySelector('[data-n]').value.trim();
+            const lotNo = body.querySelector('[data-lot]').value.trim();
+            const mfgDate = body.querySelector('[data-mfg]').value;
+            const expDate = body.querySelector('[data-exp]').value;
+            if (lotNo || mfgDate || expDate) await api(`/api/products/${encodeURIComponent(id)}/lots`, { body: { qtyBase, lotNo, mfgDate, expDate, note } });
+            else await api(`/api/products/${encodeURIComponent(id)}/stock`, { body: { type: 'RECEIVE', qtyBase, note } });
             close(); toast(`รับเข้า ${qtyBase} ${product.baseUnitName} แล้ว`); render(view, ctx);
           });
         },
