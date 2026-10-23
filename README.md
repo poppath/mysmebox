@@ -106,6 +106,17 @@ npm test
 npm start
 ```
 
+### Import Sea farmer Hero SKUs
+นำเข้าสินค้า 7 Hero SKUs จากไฟล์ `scripts/sku_cost_estimation.csv` เข้าสู่ร้านค้าจริง (Non-demo) โดยคำนวณราคาและต้นทุนเป็นหน่วยสตางค์ (BigInt satang) แบบ Idempotent:
+
+```bash
+# ตรวจสอบแผนการนำเข้า (Dry run ไม่บันทึกลงฐานข้อมูล)
+node scripts/import-hero-skus.js --owner-email=seller@example.com --dry-run
+
+# นำเข้าจริงลงร้านค้า (ค่าเริ่มต้นชื่อร้าน "Sea farmer (by Daiseiko)")
+OWNER_EMAIL=seller@example.com node scripts/import-hero-skus.js
+```
+
 ดูรายละเอียดโครงสร้าง API ทั้งหมดได้ที่ [`docs/api.md`](docs/api.md) และโครงสร้างตารางฐานข้อมูลที่ [`src/schema.sql`](src/schema.sql)
 
 ---

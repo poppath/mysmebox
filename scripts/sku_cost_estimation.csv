@@ -1,0 +1,45 @@
+Category,Product_Name,Wholesale_Price_Range_THB,Unit,Portion_Size,Raw_Cost_Per_Portion_THB,Recommended_Selling_Price_THB,Feasibility_Status
+Beef,Wagyu Striploin/Ribeye A4,2800-3500,kg,150g,420-525,590-790,Super Premium SKU (High Ticket)
+Beef,Wagyu Chuck Flap A4/A5,1800-2400,kg,130g,234-312,420-480,Premium Tier
+Beef,Wagyu Chuck Rib Boneless A4,2000-2500,kg,120g,240-300,390-450,Premium Tier
+Beef,Wagyu Chuck Roll A4,1350-1700,kg,120g,162-204,290-340,Viable for Mainstream Premium (Gourmet Stir-fry / Stew)
+Beef,NZ PS Striploin (Prime Steer),580-720,kg,180g,104-130,260-290,Perfect Fit for 280 THB Target
+Beef,NZ PS Ribeye (Cube Roll),680-820,kg,180g,122-148,280-320,Perfect Fit for 280 THB Target
+Beef,NZ Brisket Nevel End,280-350,kg,180g,50-63,220-260,High Margin (Braised / Smoked Beef)
+Lamb,NZ Lamb French Rack Cap Off,1150-1450,kg,160g (2 ribs),184-232,360-390,Premium Tier
+Lamb,NZ Lamb Hind Shank,350-450,kg,450g (1 shank),157-202,320-360,Perfect Fit for Braised Lamb Shank
+Pork,Pork Minced 70:30,130-160,kg,150g,19.5-24,160-190,Standard Menu Base
+Finfish,Snow Fish Kirimi (ปลาหิมะ 100g),1250-1500,kg,100g,125-150,320-360,Super Hero SKU (High Margin & Texture-stable)
+Finfish,Salmon Portion Skin-On 100g,48-62,piece,100g,48-62,220-250,High Margin Clean Menu
+Finfish,Salmon Steak Cut 150-160g,75-95,piece,150g,75-95,260-290,Mainstream Gourmet Fit
+Finfish,Salmon Belly (ท้องปลาแซลมอน),180-230,kg,150g,27-35,180-220,Very High Margin (Teriyaki / Shioyaki)
+Finfish,Norwegian Saba Whole,95-130,kg,400g (1 fish),38-52,160-190,Mass Premium Menu
+Finfish,Unagi Kabayaki 70P (ปลาไหลย่าง),680-850,kg,145g (1 fish),98-123,260-290,Zero-Prep Japanese Gourmet (Perfect Fit)
+Finfish,Hamachi Fillet (ฮามาจิ),850-1100,kg,120g,102-132,290-340,Premium Japanese Steak
+Finfish,Barramundi Fillet (ปลากะพง),220-280,kg,150g,33-42,220-260,High Margin Everyday Premium
+Finfish,Tuna Saku AAA,480-620,kg,120g,58-75,250-280,High Protein Lean Menu
+Shellfish,Japan Hotate Sashimi Grade L,1100-1350,kg,110g (3 pcs),121-148,290-330,High Perceived Value (Pan-seared / Truffle)
+Shellfish,US Scallop Meat 10/20,780-950,kg,120g,94-114,260-290,Pasta & Rice Topping Fit
+Shellfish,Blue Crab Canned Jumbo Lump,1350-1600,can (454g),60g,178-211,350-390,Signature Crab Curry (High Ticket)
+Shellfish,Blue Crab Canned Claw/Backfin,550-750,can (454g),70g,85-115,220-260,Crab Fried Rice Fit
+Shellfish,Taraba Crab Leg 5L,2800-3600,kg,300g,840-1080,1500-2500,Luxury Seasonal Gift Set
+Shellfish,Zuwai Snow Crab 2L,1400-1800,kg,250g,350-450,650-850,Premium Shabu Hotpot Set
+Shellfish,Whole Cooked Lobster (400-500g),450-600,piece,1 piece,450-600,750-890,Luxury Thermidor Menu
+Shellfish,Freshwater Prawn (กุ้งแม่น้ำ 6-8),480-620,kg,140g (1 prawn),67-87,190-240,Popular Thai Gourmet
+Japanese,Frozen Kani Miso 300g,280-360,pack (300g),60g,56-72,189-220,Trending Izakaya Hero
+Japanese,Snow Crab Shell 9-11cm,18-24,piece,1 shell,18-24,-,Accessory for Kani Miso Serving
+Japanese,Frozen Mentaiko Tube 300g,280-350,tube (300g),40g,37-47,220-250,Mentaiko Pasta Base Fit
+Japanese,Shoyu Ikura 500g,1450-1850,box (500g),25g,72-92,-,Premium Topping
+Japanese,Ebiko Orange 500g,190-250,box (500g),20g,7.6-10,-,Low Cost High Texture Topping
+Japanese,Takowasabi 1kg,480-620,kg,80g,38-50,119-149,Easy Ready-to-Eat Appetizer
+Japanese,Yakibuta Chashu,320-400,kg,80g,26-32,180-220,Ramen & Rice Bowl Fit
+Japanese,Arabiki Sausage 1kg,250-320,kg,100g,25-32,120-150,Breakfast & Snack Fit
+Sides,Chopped Spinach 1kg,70-90,kg,80g,5.6-7.2,-,Spinach au Gratin Side
+Sides,Broccoli 1kg,80-105,kg,50g,4-5.25,-,Gourmet Veggie Side
+Sides,Grated Parmesan 1kg,480-620,kg,15g,7.2-9.3,-,Cheese Sauce / Garnish
+Sides,Mozzarella Shredded 1kg,250-320,kg,30g,7.5-9.6,-,Melting Cheese Topping
+Sides,Butter Blend 5kg,580-750,block (5kg),15g,1.74-2.25,-,Cooking & Searing Fat
+Sides,Teriyaki/Yakiniku Sauce 2kg,320-420,can (2kg),30g,4.8-6.3,-,Japanese Sauce Glaze
+Logistics,Cool Gel Pack TH-100,3.5-4.5,piece,2-3 pcs,7-13.5,-,Cold Chain Packing
+Logistics,Cool Gel Pack TH-200,5.5-7.5,piece,2 pcs,11-15,-,Cold Chain Bundle Packing
+Logistics,Oxygen Absorber 50cc,0.9-1.4,piece,1 pc,0.9-1.4,-,Shelf-life Extension
